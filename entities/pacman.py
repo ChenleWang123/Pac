@@ -38,6 +38,10 @@ class Pacman:
         self.invisible_accumulated_score = 0
         self._last_score_read_for_invisible = 0
 
+        # 冻结
+        self._last_score_for_freeze = 0
+
+
     def update(self, maze, active_ghosts=None, pellet_grid=None, score=None):
         """Update Pac-Man's position and state."""
         prev_x, prev_y = self.x, self.y
@@ -84,6 +88,17 @@ class Pacman:
                 self.invisible_mode = True
                 self.invisible_timer = 120  # 3 秒 = 3 * 60 FPS
                 print(f"Invisibility activated at {score} points!")
+
+        # ---------- 控制冰冻触发 ----------
+        if score is not None:
+            if score - self._last_score_for_freeze >= 200:
+                self._last_score_for_freeze = score
+                if active_ghosts:
+                    for ghost in active_ghosts:
+                        ghost.frozen = True
+                        ghost.frozen_timer = 180  # 冻结 3 秒 = 3 * 60 帧
+                    print(f"Ghosts frozen at {score} points!")
+
 
 
         if constants.GAME_MODE == "DQN" and self.dqn_model:

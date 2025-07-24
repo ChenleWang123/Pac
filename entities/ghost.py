@@ -16,6 +16,9 @@ class Ghost:
         self.scatter_target = scatter_target
         self.chasing = False
 
+        self.frozen = False
+        self.frozen_timer = 0
+
         # Set ghost speed based on maze complexity
         if constants.CURRENT_MAZE_TYPE == "SIMPLE":
             self.speed = 2  # Slower in simple maze
@@ -25,6 +28,14 @@ class Ghost:
             self.chase_threshold = constants.CHASE_THRESHOLD
         
     def update(self, maze, pacman):
+
+        # 冻结逻辑：如果冻结中，则不更新位置
+        if self.frozen:
+            self.frozen_timer -= 1
+            if self.frozen_timer <= 0:
+                self.frozen = False
+            return  # 冻住时完全跳过更新逻辑
+
         """Update ghost position and behaviour."""
         current_tile_x = int(self.x // constants.TILE_SIZE)
         current_tile_y = int(self.y // constants.TILE_SIZE)
@@ -100,7 +111,24 @@ class Ghost:
             self.x = 0
 
     def draw(self, screen):
-        """Draw ghost with optional chase mode indicator."""
-        if self.chasing:
-            pygame.draw.circle(screen, (255, 255, 255), (int(self.x), int(self.y)), self.radius + 2)
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+        ghost_pos = (int(self.x), int(self.y))
+
+        # --- 冻结状态下：画半透明蓝色外圈 ---
+        if self.frozen:
+            # 创建一个带透明通道的 Surface
+            overlay = pygame.Surface((self.radius * 4, self.radius * 4), pygame.SRCALPHA)
+            pygame.draw.circle(
+                overlay,
+                (100, 150, 255, 100),  # 半透明冰蓝色
+                (self.radius * 2, self.radius * 2),
+                self.radius + 4
+            )
+            # 把这个透明圈绘制到屏幕上
+            screen.blit(overlay, (self.x - self.radius * 2, self.y - self.radius * 2))
+
+        # --- 追逐状态下白圈 ---
+        elif self.chasing:
+            pygame.draw.circle(screen, (255, 255, 255), ghost_pos, self.radius + 2)
+
+        # --- 绘制幽灵本体 ---
+        pygame.draw.circle(screen, self.color, ghost_pos, self.radius)
