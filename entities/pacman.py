@@ -27,9 +27,41 @@ class Pacman:
         self.action_history = []
         self.last_positions = []
 
-    def update(self, maze, active_ghosts=None, pellet_grid=None):
+        # 加速
+        self.boost_mode = False
+        self.boost_timer = 0  # 以帧为单位（例如 5 秒 * 60 FPS = 300）
+        self.accumulated_score  = 0  # 记录上次触发加速的分数
+
+    def update(self, maze, active_ghosts=None, pellet_grid=None, score=None):
         """Update Pac-Man's position and state."""
         prev_x, prev_y = self.x, self.y
+
+        # 隐身
+        # 控制加速状态
+        # 控制加速状态
+        if self.boost_mode:
+            self.boost_timer -= 1
+            if self.boost_timer <= 0:
+                self.boost_mode = False
+                self.speed = 3  # 恢复默认速度
+                self.accumulated_score = 0  # 恢复后再重新计分
+
+        # 只在非加速状态下累加分数触发加速
+        if score is not None and not self.boost_mode:
+            if hasattr(self, "_last_score_read"):
+                delta = score - self._last_score_read
+            else:
+                delta = score
+            self._last_score_read = score
+
+            self.accumulated_score += delta
+            if self.accumulated_score >= 200:
+                self.boost_mode = True
+                self.boost_timer = 60  # 2 秒 = 2 * 60 FPS
+                self.speed = 5
+                print(f"Boost activated at {score} points!")
+
+
 
         if constants.GAME_MODE == "DQN" and self.dqn_model:
             current_cell = pixel_to_grid(self.x, self.y)
@@ -42,7 +74,7 @@ class Pacman:
             action, _ = self.dqn_model.predict(observation, deterministic=True)
             action = int(action.item()) if hasattr(action, 'item') else int(action)
             self.last_action = action
-            
+
             direction_map = {
                 0: pygame.Vector2(1, 0),   # Right
                 1: pygame.Vector2(-1, 0),  # Left
@@ -448,26 +480,29 @@ class Pacman:
         return full_observation
 
     def draw(self, screen, score_font):
-        # Determine the facing angle using the direction vector
+        # 设置 PacMan 颜色：加速时变为绿色
+        color = (255, 140, 0) if self.boost_mode else (255, 255, 0)
+
+        # Draw Pac-Man's body
+        pygame.draw.circle(screen, color, (int(self.x), int(self.y)), self.radius)
+
+        # 方向角度
         if self.direction.length_squared() > 0:
             angle = math.atan2(self.direction.y, self.direction.x)
         else:
-            angle = 0  # Default facing right
+            angle = 0
 
-        # Set the mouth opening angle
-        mouth_angle_deg = 30  # Total opening angle
+        # 嘴巴角度
+        mouth_angle_deg = 30
         half_mouth_rad = math.radians(mouth_angle_deg / 2)
 
-        # Draw Pac-Man's body (a yellow circle)
-        pygame.draw.circle(screen, (255, 255, 0), (int(self.x), int(self.y)), self.radius)
-
-        # Calculate the points for the mouth wedge
+        # 嘴巴三角形位置
         point1 = (self.x + self.radius * math.cos(angle + half_mouth_rad),
-                 self.y + self.radius * math.sin(angle + half_mouth_rad))
+                  self.y + self.radius * math.sin(angle + half_mouth_rad))
         point2 = (self.x + self.radius * math.cos(angle - half_mouth_rad),
-                 self.y + self.radius * math.sin(angle - half_mouth_rad))
+                  self.y + self.radius * math.sin(angle - half_mouth_rad))
 
-        # Draw the mouth (a black triangle)
+        # Draw mouth
         pygame.draw.polygon(screen, (0, 0, 0), [(self.x, self.y), point1, point2])
 
         # Debug: Draw the path if in A_STAR mode

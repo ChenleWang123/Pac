@@ -465,7 +465,7 @@ def main():
         # Update game objects
         if not game_over and not game_won:
             if constants.GAME_MODE == "DQN" and pacman.dqn_model:
-                pacman.update(maze, active_ghosts, pellet_grid)
+                pacman.update(maze, active_ghosts, pellet_grid, score)
             elif constants.GAME_MODE == "IMITATION":
                 if hasattr(pacman, 'imitation_model') and pacman.imitation_model:
                     try:
@@ -503,11 +503,11 @@ def main():
                                     action = random.choice(valid_actions)
                                     pacman.desired_direction = direction_map[action]
                             pacman.last_action = action
-                            pacman.update(maze, active_ghosts, pellet_grid)
+                            pacman.update(maze, active_ghosts, pellet_grid, score)
                     except Exception as e:
                         print(f"Error using imitation model: {e}")
                         constants.GAME_MODE = "A_STAR"
-                        pacman.update(maze, active_ghosts, pellet_grid)
+                        pacman.update(maze, active_ghosts, pellet_grid, score)
                 
                 elif hasattr(pacman, 'imitation_learner') and pacman.imitation_learner:
                     try:
@@ -524,17 +524,17 @@ def main():
                         action = max(0, min(3, int(action)))
                         pacman.desired_direction = direction_map[action]
                         pacman.last_action = action
-                        pacman.update(maze, active_ghosts, pellet_grid)
+                        pacman.update(maze, active_ghosts, pellet_grid, score)
                     except Exception as e:
                         print(f"Error using native imitation learner: {e}")
                         constants.GAME_MODE = "A_STAR"
-                        pacman.update(maze, active_ghosts, pellet_grid)
+                        pacman.update(maze, active_ghosts, pellet_grid, score)
                 else:
                     print("No imitation model available. Switching to A* mode.")
                     constants.GAME_MODE = "A_STAR"
-                    pacman.update(maze, active_ghosts, pellet_grid)
+                    pacman.update(maze, active_ghosts, pellet_grid, score)
             else:
-                pacman.update(maze, active_ghosts, pellet_grid)
+                pacman.update(maze, active_ghosts, pellet_grid, score)
             
             # Record demonstration if in recording mode
             if RECORD_DEMONSTRATIONS and data_collector and data_collector.is_recording:
