@@ -32,11 +32,16 @@ class Pacman:
         self.boost_timer = 0  # 以帧为单位（例如 5 秒 * 60 FPS = 300）
         self.accumulated_score  = 0  # 记录上次触发加速的分数
 
+        # 隐身
+        self.invisible_mode = False
+        self.invisible_timer = 0
+        self.invisible_accumulated_score = 0
+        self._last_score_read_for_invisible = 0
+
     def update(self, maze, active_ghosts=None, pellet_grid=None, score=None):
         """Update Pac-Man's position and state."""
         prev_x, prev_y = self.x, self.y
 
-        # 隐身
         # 控制加速状态
         # 控制加速状态
         if self.boost_mode:
@@ -61,6 +66,24 @@ class Pacman:
                 self.speed = 5
                 print(f"Boost activated at {score} points!")
 
+        # 控制隐身状态
+        if self.invisible_mode:
+            self.invisible_timer -= 1
+            if self.invisible_timer <= 0:
+                self.invisible_mode = False
+                self.invisible_accumulated_score = 0  # 重置计分
+                print("Invisibility ended")
+
+        # 非隐身状态下计分触发隐身
+        if score is not None and not self.invisible_mode:
+            delta = score - self._last_score_read_for_invisible
+            self._last_score_read_for_invisible = score
+
+            self.invisible_accumulated_score += delta
+            if self.invisible_accumulated_score >= 200:
+                self.invisible_mode = True
+                self.invisible_timer = 120  # 3 秒 = 3 * 60 FPS
+                print(f"Invisibility activated at {score} points!")
 
 
         if constants.GAME_MODE == "DQN" and self.dqn_model:
@@ -480,29 +503,43 @@ class Pacman:
         return full_observation
 
     def draw(self, screen, score_font):
-        # 设置 PacMan 颜色：加速时变为绿色
-        color = (255, 140, 0) if self.boost_mode else (255, 255, 0)
+        # --------------------------
+        # 设置颜色 + 透明度
+        # --------------------------
+        if self.invisible_mode:
+            if self.boost_mode:
+                color = (255, 140, 0, 128)  # 半透明橘色（隐身+加速）
+            else:
+                color = (255, 255, 0, 128)  # 半透明黄色（隐身）
+        elif self.boost_mode:
+            color = (255, 140, 0, 255)  # 不透明橘色（加速）
+        else:
+            color = (255, 255, 0, 255)  # 不透明黄色（正常）
 
-        # Draw Pac-Man's body
-        pygame.draw.circle(screen, color, (int(self.x), int(self.y)), self.radius)
+        # --------------------------
+        # 使用带透明度的 Surface 绘制 PacMan 身体
+        # --------------------------
+        pacman_surface = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(pacman_surface, color, (self.radius, self.radius), self.radius)
+        screen.blit(pacman_surface, (self.x - self.radius, self.y - self.radius))
 
-        # 方向角度
+        # --------------------------
+        # 嘴巴角度
+        # --------------------------
         if self.direction.length_squared() > 0:
             angle = math.atan2(self.direction.y, self.direction.x)
         else:
             angle = 0
 
-        # 嘴巴角度
         mouth_angle_deg = 30
         half_mouth_rad = math.radians(mouth_angle_deg / 2)
 
-        # 嘴巴三角形位置
         point1 = (self.x + self.radius * math.cos(angle + half_mouth_rad),
                   self.y + self.radius * math.sin(angle + half_mouth_rad))
         point2 = (self.x + self.radius * math.cos(angle - half_mouth_rad),
                   self.y + self.radius * math.sin(angle - half_mouth_rad))
 
-        # Draw mouth
+        # 嘴巴是黑色三角形，直接画在主屏幕上
         pygame.draw.polygon(screen, (0, 0, 0), [(self.x, self.y), point1, point2])
 
         # Debug: Draw the path if in A_STAR mode

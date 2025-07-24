@@ -581,13 +581,14 @@ def main():
                     data_collector.stop_recording(score=score, won=True)
             else:
                 # Check collision with ghosts
-                for ghost in active_ghosts:
-                    if check_collision_pacman_ghost(pacman, ghost):
-                        game_over = True
-                        if RECORD_DEMONSTRATIONS and data_collector and data_collector.is_recording:
-                            print("Game over! Automatically stopping recording.")
-                            data_collector.stop_recording(score=score, won=False)
-                        break
+                if not pacman.invisible_mode:
+                    for ghost in active_ghosts:
+                        if check_collision_pacman_ghost(pacman, ghost):
+                            game_over = True
+                            if RECORD_DEMONSTRATIONS and data_collector and data_collector.is_recording:
+                                print("Game over! Automatically stopping recording.")
+                                data_collector.stop_recording(score=score, won=False)
+                            break
         
         # Render game
         restart_button = render_game(
