@@ -396,7 +396,13 @@ def main():
                         constants.GAME_MODE = "DQN"
                         print("Switched to DQN mode")
                         if not hasattr(pacman, 'dqn_model') or pacman.dqn_model is None:
-                            dqn_model = load_dqn_model()
+                            # dqn_model = load_dqn_model()
+                            dqn_model = load_dqn_model(
+                                model_path=r"E:\Programme\Python_Projects\Pac\pacman_dqn_simple_best".replace("\\",
+                                                                                                              "/"),
+                                strict=True
+                            )
+
                             if dqn_model:
                                 pacman.dqn_model = dqn_model
                             else:

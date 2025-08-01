@@ -16,8 +16,16 @@ class Ghost:
         self.scatter_target = scatter_target
         self.chasing = False
 
+        # 冰冻
         self.frozen = False
         self.frozen_timer = 0
+
+        # 穿墙
+        self.phasing = False
+        self.phase_duration = 30  # 持续帧数（约0.5秒，具体根据帧率调）
+        self.phase_timer = 0
+        self.phase_cooldown = 5000  # 每5秒触发一次（毫秒）
+        self.last_phase_time = pygame.time.get_ticks()
 
         # Set ghost speed based on maze complexity
         if constants.CURRENT_MAZE_TYPE == "SIMPLE":
@@ -36,6 +44,13 @@ class Ghost:
                 self.frozen = False
             return  # 冻住时完全跳过更新逻辑
 
+        # 检查是否该触发穿墙行为
+        now = pygame.time.get_ticks()
+        if now - self.last_phase_time >= self.phase_cooldown:
+            self.phasing = True
+            self.phase_timer = self.phase_duration
+            self.last_phase_time = now
+
         """Update ghost position and behaviour."""
         current_tile_x = int(self.x // constants.TILE_SIZE)
         current_tile_y = int(self.y // constants.TILE_SIZE)
@@ -53,9 +68,12 @@ class Ghost:
             for d in [pygame.Vector2(1, 0), pygame.Vector2(-1, 0), pygame.Vector2(0, 1), pygame.Vector2(0, -1)]:
                 nx = current_tile_x + int(d.x)
                 ny = current_tile_y + int(d.y)
-                if 0 <= nx < constants.COLS and 0 <= ny < constants.ROWS and maze[ny][nx] == 0:
-                    valid_directions.append(d)
-            
+                # if 0 <= nx < constants.COLS and 0 <= ny < constants.ROWS and maze[ny][nx] == 0:
+                #     valid_directions.append(d)
+                if 0 <= nx < constants.COLS and 0 <= ny < constants.ROWS:
+                    if self.phasing or maze[ny][nx] == 0:
+                        valid_directions.append(d)
+
             if is_in_ghost_house(current_tile_x, current_tile_y) and pygame.Vector2(0, -1) in valid_directions:
                 self.direction = pygame.Vector2(0, -1)
             else:
@@ -109,6 +127,11 @@ class Ghost:
             self.x = constants.WIDTH
         elif self.x > constants.WIDTH:
             self.x = 0
+
+        if self.phasing:
+            self.phase_timer -= 1
+            if self.phase_timer <= 0:
+                self.phasing = False
 
     def draw(self, screen):
         ghost_pos = (int(self.x), int(self.y))
