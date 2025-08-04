@@ -22,7 +22,7 @@ pygame.init()
 
 # ----- Game Configuration -----
 TRAINING_MODE = False  # Set to True to train a new model
-TESTING_MODE = True  # Set to True to run automated testing
+TESTING_MODE = False  # Set to True to run automated testing
 
 # Imitation learning settings
 IMITATION_MODE = False  # Set to True to use imitation learning model
@@ -172,6 +172,11 @@ def main():
     game_won = False
     score = 0
     restart_button = None
+
+    # 切换A*
+    last_score = 0
+    last_progress_time = pygame.time.get_ticks()
+    progress_timeout = 10000  # 10 秒毫秒
 
     # Initialise model variables
     dqn_model = None
@@ -552,6 +557,8 @@ def main():
                     if pellet_grid[pacman_row][pacman_col]:
                         reward += 10
                         pellet_eaten = True
+                        last_progress_time = pygame.time.get_ticks()
+                        last_score = score
                 
                 reward -= 0.1
                 
@@ -578,6 +585,19 @@ def main():
                 if pellet_grid[pacman_row][pacman_col]:
                     pellet_grid[pacman_row][pacman_col] = False
                     score += 10
+                    last_progress_time = pygame.time.get_ticks()
+                    last_score = score
+
+
+            # 检查是否10秒内无得分，强制切换为 A_STAR
+            if pygame.time.get_ticks() - last_progress_time > progress_timeout:
+                print("⚠️ No progress for 10 seconds. Switching to A_STAR mode.")
+                constants.GAME_MODE = "A_STAR"
+                pacman.dqn_model = None
+                if hasattr(pacman, 'imitation_model'):
+                    pacman.imitation_model = None
+                last_progress_time = pygame.time.get_ticks()
+
 
             # Check win condition
             if all(not pellet for row in pellet_grid for pellet in row):

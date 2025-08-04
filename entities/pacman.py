@@ -31,15 +31,19 @@ class Pacman:
         self.boost_mode = False
         self.boost_timer = 0  # 以帧为单位（例如 5 秒 * 60 FPS = 300）
         self.accumulated_score  = 0  # 记录上次触发加速的分数
+        self._last_score_read = 0  # ✅ 初始化加速用的分数基线
 
         # 隐身
         self.invisible_mode = False
         self.invisible_timer = 0
-        self.invisible_accumulated_score = 0
-        self._last_score_read_for_invisible = 0
+        self.invisible_score_accum = 0
+        self.invisible_cooldown = False
+        self._last_score_for_invisible = 0  # ✅ 关键初始化
 
         # 冻结
+        self.freeze_score_accum = 0
         self._last_score_for_freeze = 0
+        self.freeze_cooldown = False  # 是否处于冻结中，冻结结束前不累计分
 
 
     def update(self, maze, active_ghosts=None, pellet_grid=None, score=None):
@@ -47,57 +51,73 @@ class Pacman:
         prev_x, prev_y = self.x, self.y
 
         # 控制加速状态
-        # 控制加速状态
+        # ---------- 控制加速状态 ----------
         if self.boost_mode:
             self.boost_timer -= 1
             if self.boost_timer <= 0:
                 self.boost_mode = False
-                self.speed = 3  # 恢复默认速度
-                self.accumulated_score = 0  # 恢复后再重新计分
+                self.speed = 3
+                self.accumulated_score = 0
+                self._last_score_read = score  # ✅ 重设基线分数
+                print("Boost ended")
 
-        # 只在非加速状态下累加分数触发加速
-        if score is not None and not self.boost_mode:
-            if hasattr(self, "_last_score_read"):
-                delta = score - self._last_score_read
-            else:
-                delta = score
-            self._last_score_read = score
+        elif score is not None:
+            delta = score - self._last_score_read
+            if delta > 0:
+                self.accumulated_score += delta
+                self._last_score_read = score
 
-            self.accumulated_score += delta
-            if self.accumulated_score >= 200:
+            if self.accumulated_score >= 150:
                 self.boost_mode = True
-                self.boost_timer = 60  # 2 秒 = 2 * 60 FPS
+                self.boost_timer = 90
                 self.speed = 5
                 print(f"Boost activated at {score} points!")
 
-        # 控制隐身状态
+        # ---------- 控制隐身状态 ----------
         if self.invisible_mode:
             self.invisible_timer -= 1
             if self.invisible_timer <= 0:
                 self.invisible_mode = False
-                self.invisible_accumulated_score = 0  # 重置计分
+                self.invisible_cooldown = False
+                self.invisible_score_accum = 0
                 print("Invisibility ended")
 
-        # 非隐身状态下计分触发隐身
-        if score is not None and not self.invisible_mode:
-            delta = score - self._last_score_read_for_invisible
-            self._last_score_read_for_invisible = score
+        elif not self.invisible_cooldown:
+            if score is not None:
+                delta = max(0, score - self._last_score_for_invisible)
+                self._last_score_for_invisible = score
 
-            self.invisible_accumulated_score += delta
-            if self.invisible_accumulated_score >= 200:
-                self.invisible_mode = True
-                self.invisible_timer = 120  # 3 秒 = 3 * 60 FPS
-                print(f"Invisibility activated at {score} points!")
+                self.invisible_score_accum += delta
+                if self.invisible_score_accum >= 250:
+                    self.invisible_mode = True
+                    self.invisible_timer = 90  # 1.5秒
+                    self.invisible_cooldown = True
+                    self.invisible_score_accum = 0  # ✅ 必须清除
+                    print(f"Invisibility activated at {score} points!")
 
-        # ---------- 控制冰冻触发 ----------
-        if score is not None:
-            if score - self._last_score_for_freeze >= 200:
+        # ---------- 冻结幽灵机制 ----------
+        if self.freeze_cooldown:
+            # 冻结状态中，不进行累计，等幽灵解冻后再恢复计分
+            still_frozen = any(getattr(ghost, "frozen", False) for ghost in (active_ghosts or []))
+            if not still_frozen:
+                self.freeze_cooldown = False
+                self.freeze_score_accum = 0  # 重置积分
+        else:
+            # 只有在不冻结状态时才累计积分
+            if score is not None:
+                delta = score - self._last_score_for_freeze
                 self._last_score_for_freeze = score
-                if active_ghosts:
-                    for ghost in active_ghosts:
-                        ghost.frozen = True
-                        ghost.frozen_timer = 180  # 冻结 3 秒 = 3 * 60 帧
+
+                self.freeze_score_accum += delta
+
+                if self.freeze_score_accum >= 200:
                     print(f"Ghosts frozen at {score} points!")
+                    self.freeze_cooldown = True  # 标记：冻结已触发
+                    self.freeze_score_accum = 200  # 锁住积分直到解除
+                    if active_ghosts:
+                        for ghost in active_ghosts:
+                            ghost.frozen = True
+                            ghost.frozen_timer = 90  # 2 秒 = 2*60 帧
 
 
 
