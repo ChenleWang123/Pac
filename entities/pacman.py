@@ -27,35 +27,33 @@ class Pacman:
         self.action_history = []
         self.last_positions = []
 
-        # 加速
+        # Accelerate
         self.boost_mode = False
-        self.boost_timer = 0  # 以帧为单位（例如 5 秒 * 60 FPS = 300）
-        self.accumulated_score  = 0  # 记录上次触发加速的分数
+        self.boost_timer = 0  # In frames (e.g. 5 seconds * 60 FPS = 300)
+        self.accumulated_score = 0  # Records the score when boost was last triggered
 
-        # 隐身
+        # Invisibility
         self.invisible_mode = False
         self.invisible_timer = 0
         self.invisible_accumulated_score = 0
         self._last_score_read_for_invisible = 0
 
-        # 冻结
+        # Freeze
         self._last_score_for_freeze = 0
-
 
     def update(self, maze, active_ghosts=None, pellet_grid=None, score=None):
         """Update Pac-Man's position and state."""
         prev_x, prev_y = self.x, self.y
 
-        # 控制加速状态
-        # 控制加速状态
+        # Control boost (acceleration) state
         if self.boost_mode:
             self.boost_timer -= 1
             if self.boost_timer <= 0:
                 self.boost_mode = False
-                self.speed = 3  # 恢复默认速度
-                self.accumulated_score = 0  # 恢复后再重新计分
+                self.speed = 3  # Restore default speed
+                self.accumulated_score = 0  # Reset score accumulation after boost ends
 
-        # 只在非加速状态下累加分数触发加速
+        # Only accumulate score to trigger boost when not already in boost mode
         if score is not None and not self.boost_mode:
             if hasattr(self, "_last_score_read"):
                 delta = score - self._last_score_read
@@ -66,19 +64,19 @@ class Pacman:
             self.accumulated_score += delta
             if self.accumulated_score >= 200:
                 self.boost_mode = True
-                self.boost_timer = 60  # 2 秒 = 2 * 60 FPS
+                self.boost_timer = 90  # 1 seconds = 1 * 90 FPS
                 self.speed = 5
                 print(f"Boost activated at {score} points!")
 
-        # 控制隐身状态
+        # Control invisibility state
         if self.invisible_mode:
             self.invisible_timer -= 1
             if self.invisible_timer <= 0:
                 self.invisible_mode = False
-                self.invisible_accumulated_score = 0  # 重置计分
+                self.invisible_accumulated_score = 0  # Reset score accumulation
                 print("Invisibility ended")
 
-        # 非隐身状态下计分触发隐身
+        # Only accumulate score to trigger invisibility when not already invisible
         if score is not None and not self.invisible_mode:
             delta = score - self._last_score_read_for_invisible
             self._last_score_read_for_invisible = score
@@ -86,17 +84,17 @@ class Pacman:
             self.invisible_accumulated_score += delta
             if self.invisible_accumulated_score >= 200:
                 self.invisible_mode = True
-                self.invisible_timer = 120  # 3 秒 = 3 * 60 FPS
+                self.invisible_timer = 90  # 2 seconds = 1.5 * 60 FPS
                 print(f"Invisibility activated at {score} points!")
 
-        # ---------- 控制冰冻触发 ----------
+        # ---------- Control freeze trigger ----------
         if score is not None:
             if score - self._last_score_for_freeze >= 200:
                 self._last_score_for_freeze = score
                 if active_ghosts:
                     for ghost in active_ghosts:
                         ghost.frozen = True
-                        ghost.frozen_timer = 180  # 冻结 3 秒 = 3 * 60 帧
+                        ghost.frozen_timer = 120  # Freeze for 2 seconds = 2 * 60 frames
                     print(f"Ghosts frozen at {score} points!")
 
 

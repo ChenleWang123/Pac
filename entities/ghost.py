@@ -142,9 +142,9 @@ class Ghost:
             overlay = pygame.Surface((self.radius * 4, self.radius * 4), pygame.SRCALPHA)
             pygame.draw.circle(
                 overlay,
-                (100, 150, 255, 100),  # 半透明冰蓝色
+                (50, 180, 255, 180),  # 更亮、更饱和的蓝色，不透明度更高
                 (self.radius * 2, self.radius * 2),
-                self.radius + 4
+                self.radius + 8,  # 圆圈半径更大，包裹感更强
             )
             # 把这个透明圈绘制到屏幕上
             screen.blit(overlay, (self.x - self.radius * 2, self.y - self.radius * 2))

@@ -22,7 +22,7 @@ pygame.init()
 
 # ----- Game Configuration -----
 TRAINING_MODE = False  # Set to True to train a new model
-TESTING_MODE = True  # Set to True to run automated testing
+TESTING_MODE = False  # Set to True to run automated testing
 
 # Imitation learning settings
 IMITATION_MODE = False  # Set to True to use imitation learning model
