@@ -1,8 +1,14 @@
 # Game constants
 TILE_SIZE = 30
 CHASE_THRESHOLD = TILE_SIZE * 4
+<<<<<<< HEAD
 GAME_MODE = "DQN"  # Default game mode
 # GAME_MODE = "Human"  # Default game mode
+=======
+# GAME_MODE = "DQN"  # Default game mode
+GAME_MODE = "HUMAN"  # Default game mode
+# GAME_MODE = "A_STAR"  # Default game mode
+>>>>>>> dc43714315cc02770a0312bdde801f71088a885e
 
 # Complex maze layout
 COMPLEX_MAZE_LAYOUT = [

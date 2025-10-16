@@ -23,7 +23,7 @@ def convert_to_json_serializable(obj):
     return obj
 
 def test_dqn_model(maze, pellet_grid, model=None, num_episodes=100, render=False,
-                   use_enhanced_features=True, model_path="outputs/models/pacman_dqn",
+                   use_enhanced_features=True, model_path="E:/Programme/Python_Projects/Pac/pacman_dqn_simple_best.zip",
                    save_results=True, results_dir="./outputs/test_results"):
     """
     Test DQN model for specified number of episodes and log results
