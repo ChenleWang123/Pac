@@ -1,4 +1,4 @@
-# PACMAN-RL Team Project TUD
+# PACMAN-RL-DQN Team Project in TUD
 
 A Pacman game implementation that compares **Reinforcement Learning (DQN)** with **Behavioural Cloning (Imitation Learning)** approaches for game AI.
 
