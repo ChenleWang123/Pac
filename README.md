@@ -136,11 +136,6 @@ PACMAN-RL-VS-BC/
 - PyTorch  
 - NumPy  
 
-Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
 ---
 
 ## ▶️ Usage
